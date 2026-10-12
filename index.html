@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>荐股组合风控监控工作台</title>
+<style>
+:root{
+  --bg:#f4f6f9; --panel:#ffffff; --border:#e3e8ef; --text:#1f2937; --muted:#6b7280;
+  --red:#d92c2c; --green:#0e9f6e; --blue:#2b5fd9; --warn:#d97706; --purple:#7c3aed;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; background:var(--bg); color:var(--text); font-size:14px;}
+.wrap{max-width:1440px; margin:0 auto; padding:16px;}
+header.bar{background:linear-gradient(135deg,#1e3a8a,#2b5fd9); color:#fff; border-radius:10px; padding:16px 20px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;}
+header.bar h1{font-size:20px; font-weight:700;}
+header.bar .sub{font-size:12px; opacity:.85; margin-top:4px;}
+.btn{border:none; border-radius:6px; padding:8px 14px; cursor:pointer; font-size:13px; font-weight:600; background:#fff; color:var(--blue); transition:.15s;}
+.btn:hover{opacity:.88;}
+.btn.primary{background:#fbbf24; color:#7c2d12;}
+.btn.ghost{background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.45);}
+.btn.small{padding:4px 10px; font-size:12px;}
+.btn.danger{background:#fee2e2; color:var(--red);}
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:14px 0;}
+.card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+.card .num{font-size:26px; font-weight:800;}
+.card .lbl{font-size:12px; color:var(--muted); margin-top:2px;}
+.alertbox{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:14px;}
+.alertbox h3{font-size:14px; margin-bottom:8px; display:flex; align-items:center; gap:8px;}
+.alertbox ul{list-style:none; max-height:300px; overflow:auto;}
+.alertbox li{padding:6px 8px; border-radius:6px; margin-bottom:4px; font-size:13px; line-height:1.5;}
+.li-stop{background:#fef2f2; border-left:3px solid var(--red);}
+.li-warn{background:#fffbeb; border-left:3px solid var(--warn);}
+.li-ma{background:#eef2ff; border-left:3px solid var(--blue);}
+.pf{background:var(--panel); border:1px solid var(--border); border-radius:10px; margin-bottom:16px; overflow:hidden;}
+.pf-head{display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:12px 16px; background:#f8fafc; border-bottom:1px solid var(--border); cursor:pointer; user-select:none;}
+.pf-head h2{font-size:15px;}
+.pf-head .pid{color:var(--muted); font-size:12px;}
+.badge{font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600;}
+.b-stop{background:#fee2e2; color:var(--red);}
+.b-warn{background:#fef3c7; color:var(--warn);}
+.b-ma{background:#dbeafe; color:var(--blue);}
+.b-ok{background:#d1fae5; color:#065f46;}
+.b-total{background:#e5e7eb; color:#374151;}
+.pf-body{padding:12px 16px;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th{background:#f1f5f9; color:#475569; font-size:12px; padding:8px 6px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--border);}
+td{padding:8px 6px; border-bottom:1px solid #f1f5f9; white-space:nowrap; vertical-align:middle;}
+tr:hover td{background:#f8fafc;}
+.up{color:var(--red); font-weight:700;}
+.down{color:var(--green); font-weight:700;}
+.flat{color:var(--muted); font-weight:600;}
+.tag{display:inline-block; font-size:11px; padding:2px 7px; border-radius:4px; font-weight:600; white-space:nowrap;}
+.tag-stop{background:var(--red); color:#fff;}
+.tag-near{background:#fef3c7; color:#92400e; border:1px solid #fcd34d;}
+.tag-ma5{background:#dbeafe; color:#1e40af;}
+.tag-ma10{background:#ede9fe; color:#5b21b6;}
+.tag-ok{background:#f1f5f9; color:#64748b;}
+input.cell-in{width:78px; border:1px solid transparent; background:transparent; padding:3px 5px; border-radius:4px; font-size:13px; text-align:right;}
+input.cell-in:hover{border-color:#cbd5e1; background:#fff;}
+input.cell-in:focus{border-color:var(--blue); background:#fff; outline:none;}
+.gallery{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0;}
+.gallery .shot{position:relative;}
+.gallery img{width:150px; height:84px; object-fit:cover; border:1px solid var(--border); border-radius:6px; cursor:zoom-in; background:#fff;}
+.gallery .del{position:absolute; top:2px; right:2px; background:rgba(0,0,0,.55); color:#fff; border:none; border-radius:50%; width:18px; height:18px; font-size:11px; cursor:pointer; line-height:1;}
+.upl{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:50; align-items:center; justify-content:center; cursor:zoom-out;}
+.modal img{max-width:94vw; max-height:92vh; border-radius:8px;}
+footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.8;}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:0 0 10px;}
+.note-inline{font-size:12px; color:var(--muted);}
+.empty-hint{color:var(--muted); font-size:13px; padding:6px 2px;}
+@media print{ .btn,.gallery .del,.upl{display:none;} .pf{break-inside:avoid;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <div>
+      <h1>🛡️ 荐股组合风控监控工作台</h1>
+      <div class="sub">总部硬性规则：累计亏损 ≥ 15% 强制止损 ｜ 辅助提示：实时收盘价跌破 5 日 / 10 日均线 ｜ 网页版每个访问者看到的持仓数据为公开默认数据，个人修改只保存在自己浏览器</div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn primary" id="btnRefresh">🔄 刷新行情 / 均线检查</button>
+      <button class="btn ghost" id="btnExport">导出数据</button>
+      <button class="btn ghost" id="btnImport">导入数据</button>
+      <button class="btn ghost" id="btnAddPf">+ 新增组合</button>
+      <button class="btn ghost" id="btnReset">↺ 恢复默认数据</button>
+      <label class="btn ghost" style="margin:0;">📎 周五截图归档<input type="file" id="fileBulkImg" accept="image/*" multiple style="display:none;"></label>
+    </div>
+  </header>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="alertbox">
+    <h3>🚨 今日风控告警 <span class="note-inline" id="quoteTime"></span></h3>
+    <ul id="alertList"></ul>
+  </div>
+
+  <div class="toolbar">
+    <span class="note-inline">提示：累计涨幅每周五收盘后照截图手动更新（点击单元格可直接编辑）；现价 / MA5 / MA10 优先采用通达信实时行情（每日 15:30 由自动化任务更新写入 quotes.js），页面内刷新时缺失标的自动回退腾讯行情接口；红涨绿跌。成本价默认取截图中的参考价（即买入参考价），可点击单元格修正。</span>
+  </div>
+
+  <div id="pfList"></div>
+
+  <footer>
+    <b>使用说明</b><br>
+    1. <b>每周五收盘后</b>：将各组合截图上传到对应组合卡片（也可点右上角“周五截图归档”批量上传后自行分配），并按截图更新每只持仓的“累计涨幅”。<br>
+    2. <b>每个交易日收盘后</b>：点击“刷新行情 / 均线检查”（若 15:00 后打开页面会自动执行一次），系统自动拉取最新收盘价与日 K，计算 MA5 / MA10 并提示跌破情况。<br>
+    3. 状态优先级：<span class="tag tag-stop">强制止损</span>（亏损≥15%，总部硬性规定）→ <span class="tag tag-near">接近止损</span>（-15%~-12% 预警区）→ <span class="tag tag-ma5">跌破5日线</span> / <span class="tag tag-ma10">跌破10日线</span> → <span class="tag tag-ok">正常</span>。<br>
+    4. 数据（含截图压缩件）保存在本机浏览器 localStorage，请定期“导出数据”备份；更换电脑或清理浏览器缓存前务必先导出。<br>
+    <span id="storageInfo"></span>
+  </footer>
+</div>
+
+<div class="modal" id="modal" onclick="this.style.display='none'"><img id="modalImg"></div>
+
+<!-- 通达信每日收盘数据（由自动化任务 15:30 生成写入，格式：window.TDX_QUOTES={date, time, stocks:{code:{name,price,close,ma5,ma10}}}） -->
+<script src="quotes.js"></script>
+
+<script>
+/* ============ 初始数据：来自 2026-10-12 截图 ============ */
+const DEFAULT_DATA = {
+  updatedAt: "2026-10-12",
+  portfolios: [
+    {id:"16438", name:"涌金科创价值优选", holdings:[
+      {name:"许继电气", code:"000400", buyDate:"2025-10-14", pct:-20.44, ref:27.76}
+    ]},
+    {id:"16492", name:"景气轮动ETF", holdings:[
+      {name:"化工ETF华宝", code:"516020", buyDate:"2026-09-10", pct:-9.95, ref:0.864},
+      {name:"云计算ETF鹏华", code:"159739", buyDate:"2026-08-14", pct:-14.15, ref:0.834},
+      {name:"电力ETF华泰柏瑞", code:"561560", buyDate:"2026-08-04", pct:-2.22, ref:1.305},
+      {name:"汽车ETF国泰", code:"516110", buyDate:"2025-09-23", pct:-30.94, ref:1.516}
+    ]},
+    {id:"16435", name:"清泰价值优选组合", holdings:[
+      {name:"亨通光电", code:"600487", buyDate:"2026-10-08", pct:-9.35, ref:55.3},
+      {name:"宝信软件", code:"600845", buyDate:"2026-09-23", pct:-4.06, ref:18.45},
+      {name:"中国稀土", code:"000831", buyDate:"2026-09-22", pct:-12.89, ref:55.45},
+      {name:"华邦健康", code:"002004", buyDate:"2026-09-10", pct:-1.97, ref:4.67},
+      {name:"天赐材料", code:"002709", buyDate:"2026-08-19", pct:-11.43, ref:39.48},
+      {name:"上海电力", code:"600021", buyDate:"2026-08-03", pct:-13.60, ref:14.78},
+      {name:"中国核电", code:"601985", buyDate:"2026-08-03", pct:0.11, ref:9.16},
+      {name:"中国重汽", code:"000951", buyDate:"2026-07-27", pct:-8.40, ref:22.15},
+      {name:"中兴通讯", code:"000063", buyDate:"2026-07-16", pct:-28.69, ref:40.38}
+    ]},
+    {id:"16560", name:"艮山价值优选组合", holdings:[
+      {name:"亨通光电", code:"600487", buyDate:"2026-10-08", pct:-9.35, ref:55.3},
+      {name:"宝信软件", code:"600845", buyDate:"2026-09-23", pct:-3.96, ref:18.43},
+      {name:"中国稀土", code:"000831", buyDate:"2026-09-22", pct:-12.82, ref:55.40},
+      {name:"华邦健康", code:"002004", buyDate:"2026-09-10", pct:-1.97, ref:4.67},
+      {name:"天赐材料", code:"002709", buyDate:"2026-08-19", pct:-11.36, ref:39.45},
+      {name:"上海电力", code:"600021", buyDate:"2026-08-03", pct:-13.54, ref:14.77},
+      {name:"中国核电", code:"601985", buyDate:"2026-08-03", pct:0, ref:9.17},
+      {name:"中国重汽", code:"000951", buyDate:"2026-07-27", pct:-8.31, ref:22.13},
+      {name:"中兴通讯", code:"000063", buyDate:"2026-07-16", pct:-28.61, ref:40.33}
+    ]},
+    {id:"16449", name:"西湖价值全球ETF", holdings:[
+      {name:"红利低波100ETF景顺", code:"515100", buyDate:"2024-11-29", pct:-0.76, ref:1.449},
+      {name:"十年国债ETF国泰", code:"511260", buyDate:"2024-11-25", pct:2.37, ref:131.829}
+    ]},
+    {id:"16553", name:"凤山价值优选组合", holdings:[
+      {name:"洛阳钼业", code:"603993", buyDate:"2026-09-23", pct:-5.42, ref:17.9},
+      {name:"中广天择", code:"603721", buyDate:"2026-09-22", pct:6.98, ref:18.49},
+      {name:"浪潮信息", code:"000977", buyDate:"2026-09-22", pct:-14.82, ref:73.09},
+      {name:"京泉华", code:"002885", buyDate:"2026-09-04", pct:-19.44, ref:29.32}
+    ]},
+    {id:"16482", name:"武林价值优选组合", holdings:[
+      {name:"洛阳钼业", code:"603993", buyDate:"2026-09-23", pct:-5.53, ref:17.9},
+      {name:"中广天择", code:"603721", buyDate:"2026-09-22", pct:6.70, ref:18.5},
+      {name:"浪潮信息", code:"000977", buyDate:"2026-09-22", pct:-14.89, ref:73.05},
+      {name:"京泉华", code:"002885", buyDate:"2026-09-04", pct:-19.09, ref:29.18}
+    ]},
+    {id:"16478", name:"望江价值优选组合", holdings:[
+      {name:"紫光股份", code:"000938", buyDate:"2026-09-22", pct:-16.78, ref:34.14},
+      {name:"永鼎股份", code:"600105", buyDate:"2026-09-21", pct:-33.93, ref:46.51},
+      {name:"立讯精密", code:"002475", buyDate:"2026-08-27", pct:-18.54, ref:57.02},
+      {name:"完美世界", code:"002624", buyDate:"2026-08-11", pct:-16.25, ref:11.88},
+      {name:"拓维信息", code:"002261", buyDate:"2026-07-22", pct:-20.69, ref:28.91},
+      {name:"芭田股份", code:"002170", buyDate:"2026-05-08", pct:-18.02, ref:13.7}
+    ]},
+    {id:"16574", name:"朝晖价值优选组合", holdings:[]},
+    {id:"16466", name:"清波价值优选组合", holdings:[
+      {name:"粤桂股份", code:"000833", buyDate:"2026-10-12", pct:-3.93, ref:19.61},
+      {name:"新华网", code:"603888", buyDate:"2026-09-22", pct:-6.01, ref:18.81},
+      {name:"圣泉集团", code:"605589", buyDate:"2026-09-21", pct:-18.64, ref:41.42},
+      {name:"山金国际", code:"000975", buyDate:"2026-09-03", pct:-12.64, ref:26.89},
+      {name:"美利云", code:"000815", buyDate:"2026-08-28", pct:-18.08, ref:16.87},
+      {name:"中国化学", code:"601117", buyDate:"2026-08-06", pct:-6.49, ref:7.8},
+      {name:"上海电力", code:"600021", buyDate:"2026-08-03", pct:-13.54, ref:14.77}
+    ]},
+    {id:"16443", name:"候潮价值优选组合", holdings:[
+      {name:"保利发展", code:"600048", buyDate:"2026-09-22", pct:-2.10, ref:5.72},
+      {name:"航发动力", code:"600893", buyDate:"2026-09-15", pct:-7.60, ref:40.42},
+      {name:"中信证券", code:"600030", buyDate:"2026-08-31", pct:-5.91, ref:27.57},
+      {name:"德业股份", code:"605117", buyDate:"2026-08-24", pct:-15.42, ref:95.13},
+      {name:"立讯精密", code:"002475", buyDate:"2026-06-18", pct:-32.58, ref:69.04},
+      {name:"中国核电", code:"601985", buyDate:"2026-06-17", pct:0.55, ref:9.27},
+      {name:"华电国际", code:"600027", buyDate:"2026-06-12", pct:5.08, ref:5.06}
+    ]},
+    {id:"16448", name:"钱塘价值优选组合", holdings:[
+      {name:"中科曙光", code:"603019", buyDate:"2026-08-28", pct:-15.66, ref:87.18},
+      {name:"杭州银行", code:"600926", buyDate:"2026-04-21", pct:3.46, ref:17.51}
+    ]},
+    {id:"16442", name:"庆春价值优选组合", holdings:[
+      {name:"新华网", code:"603888", buyDate:"2026-09-22", pct:-6.36, ref:18.88}
+    ]},
+    {id:"16538", name:"凤起价值优选组合", holdings:[
+      {name:"烽火通信", code:"600498", buyDate:"2026-09-21", pct:-28.12, ref:44.84},
+      {name:"山东黄金", code:"600547", buyDate:"2026-08-21", pct:-26.92, ref:36.4},
+      {name:"北特科技", code:"603009", buyDate:"2026-07-06", pct:-22.84, ref:53.9},
+      {name:"中国国航", code:"601111", buyDate:"2026-06-15", pct:-12.10, ref:6.53}
+    ]},
+    {id:"16503", name:"德胜价值优选组合", holdings:[
+      {name:"英科医疗", code:"300677", buyDate:"2026-09-22", pct:-11.06, ref:51.19},
+      {name:"烽火通信", code:"600498", buyDate:"2026-09-21", pct:-28.07, ref:44.81},
+      {name:"山东黄金", code:"600547", buyDate:"2026-08-21", pct:-26.92, ref:36.4},
+      {name:"北特科技", code:"603009", buyDate:"2026-07-06", pct:-22.87, ref:53.92},
+      {name:"中国国航", code:"601111", buyDate:"2026-06-15", pct:-12.10, ref:6.53}
+    ]},
+    {id:"16544", name:"河坊景气行业ETF", holdings:[
+      {name:"创业板新能源ETF华夏", code:"159368", buyDate:"2026-05-08", pct:-32.30, ref:1.734},
+      {name:"化工ETF鹏华", code:"159870", buyDate:"2026-05-06", pct:-24.09, ref:0.959}
+    ]}
+  ]
+};
+
+/* ============ 状态与存储 ============ */
+const LS_KEY = "recommMonitor.v3";
+let state;
+try{ state = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ state = null; }
+if(!state || !state.portfolios){
+  state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  state.images = {}; // pid -> [dataURL,...]
+}
+if(!state.images) state.images = {};
+
+function save(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    updateStorageInfo();
+  }catch(e){
+    alert("本地存储空间不足（截图占用较大）！建议先“导出数据”备份，再删除部分截图。");
+  }
+}
+function updateStorageInfo(){
+  let bytes = 0;
+  try{ bytes = (localStorage.getItem(LS_KEY)||"").length; }catch(e){}
+  const mb = (bytes*2/1024/1024).toFixed(2);
+  document.getElementById("storageInfo").textContent = `当前本地存储占用约 ${mb} MB（浏览器上限一般 5MB）`;
+}
+
+/* ============ 工具 ============ */
+function mkt(code){ return /^(6|5|9)/.test(code) ? "sh" : "sz"; }
+function sym(code){ return mkt(code) + code; }
+function fmt(n, d){ if(n==null || isNaN(n)) return "—"; return (+n).toFixed(d==null?2:d); }
+function pctCls(v){ return v>0 ? "up" : (v<0 ? "down" : "flat"); }
+function fmtPct(v){ if(v==null||isNaN(v)) return "—"; return (v>0?"+":"") + v.toFixed(2) + "%"; }
+function loadScript(url, charset){
+  return new Promise((res, rej)=>{
+    const s = document.createElement("script");
+    if(charset) s.charset = charset;
+    s.src = url; s.onload = ()=>res(); s.onerror = ()=>rej(new Error("load fail: "+url));
+    document.head.appendChild(s);
+  });
+}
+// 成本价：截图中的“参考价”即买入参考价（成本价）；若手工修正过则用手工值
+// 实时收益 = 最新价 / 成本价 - 1，与每周五截图录入的“累计涨幅”互为校验
+function estCost(h){ if(h.cost != null && h.cost !== "") return h.cost; return (h.ref != null ? h.ref : null); }
+
+/* ============ 行情引擎（腾讯公开接口，仅取数） ============ */
+let QUOTES = {};   // sym -> {price, name, time}
+let KLINE = {};    // sym -> {closes:[...], ma5, ma10, lastClose, lastDate}
+let quoteTimeStr = "";
+
+async function fetchQuotes(syms){
+  if(!syms.length) return;
+  await loadScript("https://qt.gtimg.cn/q=" + syms.join(",") + "&r=" + Date.now(), "gbk");
+  const out = {};
+  syms.forEach(sy=>{
+    const v = window["v_" + sy];
+    if(v && typeof v === "string"){
+      const f = v.split("~");
+      if(f.length > 46){
+        out[sy] = { name:f[1], price:parseFloat(f[3]), prevClose:parseFloat(f[4]), time:f[30]||"" };
+        if(f[30] && f[30].length > quoteTimeStr.length) quoteTimeStr = f[30];
+      }
+    }
+  });
+  Object.assign(QUOTES, out);
+}
+
+async function fetchKline(sy){
+  const varName = "kd_" + sy.replace(/[^a-z]/gi,"");
+  try{
+    await loadScript(`https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${sy},day,,,40,qfq&_var=${varName}&r=${Date.now()}`);
+    const data = window[varName];
+    if(!data || !data.data || !data.data[sy]) return;
+    const node = data.data[sy];
+    const rows = node.qfqday || node.day || [];
+    const closes = rows.map(r=>parseFloat(r[2])).filter(x=>!isNaN(x));
+    if(!closes.length) return;
+    const avg = n => closes.length >= n ? closes.slice(-n).reduce((a,b)=>a+b,0)/n : null;
+    KLINE[sy] = { closes, ma5:avg(5), ma10:avg(10), lastClose:closes[closes.length-1], lastDate:rows[rows.length-1][0] };
+  }catch(e){ /* 单只失败忽略 */ }
+}
+
+/* ============ 规则计算 ============ */
+function analyze(h){
+  const sy = sym(h.code);
+  const q = QUOTES[sy], k = KLINE[sy];
+  const cost = estCost(h);
+  const r = { sy, price:q? q.price:null, cost, rtPct:null, ma5:null, ma10:null,
+              below5:false, below10:false, level:"ok", maText:"" };
+  if(q && cost && cost>0) r.rtPct = (q.price/cost - 1)*100;
+  if(k){
+    r.ma5 = k.ma5; r.ma10 = k.ma10;
+    const px = q && q.price ? q.price : k.lastClose;
+    r.below5 = r.ma5!=null && px < r.ma5;
+    r.below10 = r.ma10!=null && px < r.ma10;
+    if(r.below5 && r.below10) r.maText = "跌破5日&10日线";
+    else if(r.below5) r.maText = "跌破5日线";
+    else if(r.below10) r.maText = "跌破10日线";
+  }
+  const pctMin = Math.min(h.pct==null? 0 : h.pct, r.rtPct==null? 0 : r.rtPct);
+  if(h.pct<=-15 || (r.rtPct!=null && r.rtPct<=-15)) r.level = "stop";
+  else if(h.pct<=-12 || (r.rtPct!=null && r.rtPct<=-12)) r.level = "near";
+  else if(r.below5 || r.below10) r.level = "ma";
+  r.pctMin = pctMin;
+  return r;
+}
+
+/* ============ 渲染 ============ */
+function render(){
+  renderCards();
+  renderAlerts();
+  renderPortfolios();
+  updateStorageInfo();
+  const qt = quoteTimeStr ?
+    `行情时间 ${quoteTimeStr.slice(0,4)}-${quoteTimeStr.slice(4,6)}-${quoteTimeStr.slice(6,8)} ${quoteTimeStr.slice(8,10)}:${quoteTimeStr.slice(10,12)}` : "行情未拉取";
+  document.getElementById("quoteTime").textContent =
+    `（${qt} ｜ 持仓数据版本 ${state.updatedAt || DEFAULT_DATA.updatedAt} ｜ 数据源 ${state.dataSource || "未刷新"}）`;
+}
+
+function renderCards(){
+  let total=0, stop=0, near=0, ma=0, ok=0;
+  state.portfolios.forEach(p=>p.holdings.forEach(h=>{
+    total++;
+    const a = analyze(h);
+    if(a.level==="stop") stop++; else if(a.level==="near") near++; else if(a.level==="ma") ma++; else ok++;
+  }));
+  document.getElementById("cards").innerHTML = `
+    <div class="card"><div class="num">${total}</div><div class="lbl">监控持仓总数（${state.portfolios.length} 个组合）</div></div>
+    <div class="card"><div class="num" style="color:var(--red)">${stop}</div><div class="lbl">🔴 强制止损（亏损≥15%）</div></div>
+    <div class="card"><div class="num" style="color:var(--warn)">${near}</div><div class="lbl">🟠 接近止损（-12%~-15%）</div></div>
+    <div class="card"><div class="num" style="color:var(--blue)">${ma}</div><div class="lbl">🔵 跌破均线提示</div></div>
+    <div class="card"><div class="num" style="color:var(--green)">${ok}</div><div class="lbl">🟢 正常</div></div>`;
+}
+
+function renderAlerts(){
+  const items = [];
+  state.portfolios.forEach(p=>p.holdings.forEach(h=>{
+    const a = analyze(h);
+    if(a.level==="stop"){
+      const src = h.pct<=-15 ? "累计涨幅" : "实时估算";
+      items.push({lv:0, html:`<b>【强制止损】</b>${p.name}（${p.id}）· ${h.name} ${h.code}：${src}亏损 ${fmtPct(h.pct<=-15? h.pct : a.rtPct)}，已触发总部 15% 硬性止损线，请立即按流程处置`, cls:"li-stop"});
+    }else if(a.level==="near"){
+      items.push({lv:1, html:`<b>【接近止损】</b>${p.name}（${p.id}）· ${h.name} ${h.code}：亏损 ${fmtPct(Math.min(h.pct, a.rtPct==null?h.pct:a.rtPct))}，距 15% 止损线已不足 3 个百分点，重点关注`, cls:"li-warn"});
+    }
+    if(a.below5 || a.below10){
+      items.push({lv:2, html:`<b>【均线告警】</b>${p.name}（${p.id}）· ${h.name} ${h.code}：现价 ${fmt(a.price)} 已${a.maText}（MA5 ${fmt(a.ma5)} / MA10 ${fmt(a.ma10)}），短期趋势走弱`, cls:"li-ma"});
+    }
+  }));
+  items.sort((a,b)=>a.lv-b.lv);
+  const ul = document.getElementById("alertList");
+  if(!items.length){ ul.innerHTML = `<li class="li-ok" style="background:#f0fdf4;border-left:3px solid var(--green)">✅ 暂无告警：无标的触及 15% 止损线，且收盘价均站在 5 日 / 10 日均线上方。</li>`; }
+  else ul.innerHTML = items.map(i=>`<li class="${i.cls}">${i.html}</li>`).join("");
+}
+
+function levelTag(a){
+  if(a.level==="stop") return `<span class="tag tag-stop">强制止损</span>`;
+  if(a.level==="near") return `<span class="tag tag-near">接近止损</span>`;
+  if(a.below5&&a.below10) return `<span class="tag tag-ma10">破5&10日线</span>`;
+  if(a.below5) return `<span class="tag tag-ma5">破5日线</span>`;
+  if(a.below10) return `<span class="tag tag-ma10">破10日线</span>`;
+  return `<span class="tag tag-ok">正常</span>`;
+}
+
+function renderPortfolios(){
+  const box = document.getElementById("pfList");
+  box.innerHTML = state.portfolios.map((p,pi)=>{
+    const counts = {stop:0,near:0,ma:0};
+    p.holdings.forEach(h=>{ const a=analyze(h); if(a.level==="stop")counts.stop++; else if(a.level==="near")counts.near++; else if(a.level==="ma")counts.ma++; });
+    const imgs = state.images[p.id] || [];
+    const rows = p.holdings.map((h,hi)=>{
+      const a = analyze(h);
+      return `<tr>
+        <td><b>${h.name}</b></td>
+        <td>${h.code}</td>
+        <td>${h.buyDate||"—"}</td>
+        <td><input class="cell-in" type="number" step="0.001" value="${fmt(estCost(h),3)}" onchange="editCost(${pi},${hi},this.value)" title="买入成本价（可修改）"></td>
+        <td><input class="cell-in ${pctCls(h.pct)}" type="number" step="0.01" value="${h.pct}" onchange="editPct(${pi},${hi},this.value)" title="累计涨幅%（每周五照截图更新）"></td>
+        <td class="${pctCls(a.rtPct==null?0:a.rtPct)}">${fmt(a.price, h.ref<10?3:2)}</td>
+        <td class="${pctCls(a.rtPct==null?0:a.rtPct)}">${a.rtPct==null?"—":fmtPct(a.rtPct)}</td>
+        <td>${fmt(a.ma5, h.ref<10?3:2)}</td>
+        <td>${fmt(a.ma10, h.ref<10?3:2)}</td>
+        <td>${a.maText? `<span class="tag ${a.below5&&a.below10?"tag-ma10":(a.below5?"tag-ma5":"tag-ma10")}">${a.maText}</span>` : `<span class="tag tag-ok">均线上方</span>`}</td>
+        <td>${levelTag(a)}</td>
+        <td><button class="btn small danger" onclick="delHolding(${pi},${hi})">删</button></td>
+      </tr>`;
+    }).join("");
+    return `<div class="pf" id="pf-${pi}">
+      <div class="pf-head" onclick="toggleBody(${pi})">
+        <h2>${p.name}</h2><span class="pid">组合ID ${p.id}</span>
+        <span class="badge b-total">持仓 ${p.holdings.length}</span>
+        ${counts.stop? `<span class="badge b-stop">强制止损 ${counts.stop}</span>`:""}
+        ${counts.near? `<span class="badge b-warn">接近止损 ${counts.near}</span>`:""}
+        ${counts.ma? `<span class="badge b-ma">破均线 ${counts.ma}</span>`:""}
+        <span class="note-inline" id="tg-${pi}" style="margin-left:auto">收起 ▲</span>
+      </div>
+      <div class="pf-body">
+        <div class="upl">
+          📷 截图归档（每周五收盘后上传）：
+          <label class="btn small primary" style="margin:0;">上传截图<input type="file" accept="image/*" multiple style="display:none" onchange="uploadShots(${pi},this.files)"></label>
+          <span class="note-inline">${imgs.length? `已归档 ${imgs.length} 张`:"暂无截图"}</span>
+        </div>
+        <div class="gallery">${imgs.map((src,ii)=>`
+          <div class="shot"><img src="${src}" onclick="viewImg(${pi},${ii})"><button class="del" onclick="delShot(${pi},${ii})">✕</button></div>`).join("")}
+        </div>
+        ${p.holdings.length? `
+        <table>
+          <thead><tr><th>个股名称</th><th>代码</th><th>买入日期</th><th title="截图中的参考价，可手工修正">成本价</th><th title="每周五收盘后按截图录入">累计涨幅%</th><th>最新价</th><th title="最新价 ÷ 成本价 - 1">实时收益%</th><th>MA5</th><th>MA10</th><th>均线状态</th><th>综合状态</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>` : `<div class="empty-hint">该组合当前无持仓。</div>`}
+        <div style="margin-top:8px;"><button class="btn small" onclick="addHolding(${pi})">+ 添加持仓</button></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleBody(pi){
+  const body = document.querySelector(`#pf-${pi} .pf-body`);
+  const tg = document.getElementById(`tg-${pi}`);
+  const hidden = body.style.display === "none";
+  body.style.display = hidden ? "" : "none";
+  tg.textContent = hidden ? "收起 ▲" : "展开 ▼";
+}
+
+/* ============ 编辑操作 ============ */
+function editPct(pi,hi,v){ const n=parseFloat(v); if(isNaN(n))return; state.portfolios[pi].holdings[hi].pct=n; save(); render(); }
+function editCost(pi,hi,v){ const n=parseFloat(v); if(isNaN(n))return; state.portfolios[pi].holdings[hi].cost=n; save(); render(); }
+function delHolding(pi,hi){
+  const h = state.portfolios[pi].holdings[hi];
+  if(confirm(`确认删除持仓：${h.name} ${h.code}？`)){
+    state.portfolios[pi].holdings.splice(hi,1); save(); render();
+  }
+}
+function addHolding(pi){
+  const name = prompt("个股/ETF 名称："); if(!name) return;
+  const code = prompt("6 位代码（如 600487 / 159870）："); if(!code || !/^\d{6}$/.test(code)) return alert("代码格式不正确");
+  const buyDate = prompt("买入日期（YYYY-MM-DD）：", new Date().toISOString().slice(0,10)) || "";
+  const pct = parseFloat(prompt("累计涨幅%（如 -8.5）：","0")); if(isNaN(pct)) return alert("涨幅格式不正确");
+  const ref = parseFloat(prompt("参考价：","0")); if(isNaN(ref)) return alert("参考价格式不正确");
+  state.portfolios[pi].holdings.push({name, code, buyDate, pct, ref});
+  save(); refreshData();
+}
+function resetDefault(){
+  if(confirm("恢复为公开默认数据？你在本地录入的持仓、累计涨幅与截图归档将被清空。")){
+    const imgs = state.images;
+    state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    state.images = imgs && confirm("保留已上传的截图归档？\n【确定】= 保留截图\n【取消】= 一并清空") ? imgs : {};
+    save(); refreshData();
+  }
+}
+function addPortfolio(){
+  const name = prompt("组合名称："); if(!name) return;
+  const id = prompt("组合ID：", String(Date.now()).slice(-5)); if(!id) return;
+  state.portfolios.push({id, name, holdings:[]});
+  save(); render();
+}
+
+/* ============ 截图归档 ============ */
+function compressImage(file, maxW=1100, quality=0.62){
+  return new Promise((res,rej)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const scale = Math.min(1, maxW/img.width);
+        const cv = document.createElement("canvas");
+        cv.width = img.width*scale; cv.height = img.height*scale;
+        cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+        res(cv.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = rej;
+      img.src = e.target.result;
+    };
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+async function uploadShots(pi, files){
+  if(!files || !files.length) return;
+  for(const f of files){
+    try{
+      const dataURL = await compressImage(f);
+      const pid = state.portfolios[pi].id;
+      if(!state.images[pid]) state.images[pid] = [];
+      state.images[pid].push(dataURL);
+    }catch(e){ alert("图片处理失败：" + f.name); }
+  }
+  save(); render();
+}
+function delShot(pi,ii){
+  const pid = state.portfolios[pi].id;
+  if(confirm("确认删除这张截图？")){ state.images[pid].splice(ii,1); save(); render(); }
+}
+function viewImg(pi,ii){ document.getElementById("modalImg").src = state.images[state.portfolios[pi].id][ii]; document.getElementById("modal").style.display = "flex"; }
+
+/* ============ 导入导出 ============ */
+function exportData(){
+  const withImgs = confirm("导出内容包含截图归档吗？\n【确定】= 包含截图（文件较大）\n【取消】= 仅导出持仓数据");
+  const data = JSON.parse(JSON.stringify(state));
+  if(!withImgs) delete data.images;
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `荐股组合监控备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importData(){
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = ".json";
+  inp.onchange = ()=>{
+    const f = inp.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = e=>{
+      try{
+        const d = JSON.parse(e.target.result);
+        if(!d.portfolios) throw 0;
+        if(confirm("导入将覆盖当前全部数据，确认继续？")){
+          state = d; if(!state.images) state.images = {};
+          save(); render(); alert("导入成功");
+        }
+      }catch(err){ alert("文件格式不正确"); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ============ 刷新与自动检查 ============ */
+function tdxToday(){
+  const t = window.TDX_QUOTES;
+  if(!t || !t.date || !t.stocks) return null;
+  const today = new Date().toISOString().slice(0,10);
+  // 通达信数据为当日收盘数据时优先使用；否则忽略（回退到腾讯行情）
+  return t.date === today ? t : null;
+}
+async function refreshData(){
+  const btn = document.getElementById("btnRefresh");
+  btn.disabled = true; btn.textContent = "⏳ 拉取行情中…";
+  quoteTimeStr = "";
+  const syms = [...new Set(state.portfolios.flatMap(p=>p.holdings.map(h=>sym(h.code))))];
+  const td = tdxToday();
+  // 通达信当日收盘数据优先；缺失的标的回退到腾讯行情接口
+  const need = td ? syms.filter(sy=>{ const t=td.stocks[sy.slice(2)]; return !(t && (t.price!=null || t.close!=null)); }) : syms;
+  if(need.length){ try{ await fetchQuotes(need); }catch(e){} await Promise.all(need.map(sy=>fetchKline(sy))); }
+  if(td){
+    syms.forEach(sy=>{
+      const t = td.stocks[sy.slice(2)]; if(!t) return;
+      const px = t.price!=null ? t.price : t.close;
+      if(px!=null) QUOTES[sy] = { name:t.name||"", price:px, prevClose:t.prevClose??null, time:td.time||td.date };
+      if(t.ma5!=null || t.ma10!=null){
+        KLINE[sy] = { closes:[], ma5:t.ma5??null, ma10:t.ma10??null, lastClose:px, lastDate:td.date };
+      }
+    });
+    const ds = (td.date||"").replace(/-/g,"");
+    const ts = (td.time||"153000").replace(/:/g,"");
+    quoteTimeStr = ds + (ts.length>=6 ? ts.slice(0,6) : "153000") + "00";
+    state.dataSource = "通达信实时行情（每日 15:30 自动更新）";
+  }else{
+    state.dataSource = "腾讯行情接口（浏览器实时拉取）";
+  }
+  state.lastCheck = new Date().toISOString();
+  save(); render();
+  btn.disabled = false; btn.textContent = "🔄 刷新行情 / 均线检查";
+}
+function autoCheck(){
+  // 每次打开页面都拉取最新行情（收盘后为当日收盘价），不再受"每日一次"限制
+  state.lastAutoDate = new Date().toISOString().slice(0,10); save();
+  setTimeout(refreshData, 200);
+}
+
+/* ============ 事件绑定 ============ */
+document.getElementById("btnRefresh").onclick = refreshData;
+document.getElementById("btnExport").onclick = exportData;
+document.getElementById("btnImport").onclick = importData;
+document.getElementById("btnAddPf").onclick = addPortfolio;
+document.getElementById("btnReset").onclick = resetDefault;
+document.getElementById("fileBulkImg").onchange = async e=>{
+  // 批量上传：默认进第一个组合，可在卡片里再分配
+  if(!state.portfolios.length) return;
+  await uploadShots(0, e.target.files);
+  e.target.value = "";
+};
+
+render();
+autoCheck();
+</script>
+</body>
+</html>
