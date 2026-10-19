@@ -67,6 +67,26 @@ input.cell-in:focus{border-color:var(--blue); background:#fff; outline:none;}
 .modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:50; align-items:center; justify-content:center; cursor:zoom-out;}
 .modal img{max-width:94vw; max-height:92vh; border-radius:8px;}
 footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.8;}
+.banner{
+  background:linear-gradient(90deg,#fff7ed 0%,#fef3c7 100%);
+  border:1px solid #fcd34d; border-left:5px solid #d92c2c;
+  border-radius:8px; padding:12px 16px; margin:0 0 14px;
+  box-shadow:0 1px 4px rgba(217,44,44,.08);
+}
+.banner h2{
+  font-size:14px; color:#7c2d12; font-weight:700;
+  display:flex; align-items:center; gap:8px; margin-bottom:6px;
+}
+.banner p{font-size:13px; color:#7c2d12; line-height:1.8; margin:0;}
+.banner p b{color:#5b1212;}
+.banner .actions{float:right; display:flex; gap:6px;}
+.banner button{
+  background:#fff; color:#7c2d12; border:1px solid #fcd34d;
+  border-radius:4px; padding:2px 10px; font-size:12px; cursor:pointer; font-weight:600;
+}
+.banner button:hover{background:#fff7ed;}
+.banner.collapsed{padding:6px 16px;}
+.banner.collapsed p{display:none;}
 .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:0 0 10px;}
 .note-inline{font-size:12px; color:var(--muted);}
 .empty-hint{color:var(--muted); font-size:13px; padding:6px 2px;}
@@ -82,6 +102,13 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
 </head>
 <body>
 <div class="wrap">
+  <div class="banner" id="banner">
+    <div class="actions">
+      <button onclick="toggleBanner()">收起 ▾</button>
+    </div>
+    <h2>🛑 部门止损警示公示规则（每周五收盘后执行）</h2>
+    <p>每周五收盘后，对组合内所有个股进行排查，筛选出<b>亏损幅度超 10%</b>且<b>同时跌破 5 日、10 日均线</b>的标的，在<b>部门排班表中做止损警示公示</b>；<b>相关责任人须于下周二下班前完成处理</b>。</p>
+  </div>
   <header class="bar">
     <div>
       <h1>🛡️ 荐股组合风控监控工作台</h1>
@@ -257,6 +284,13 @@ if(!state || !state.portfolios){
 }
 if(!state.images) state.images = {};
 
+function toggleBanner(){
+  const b = document.getElementById("banner");
+  const c = b.classList.toggle("collapsed");
+  state.bannerCollapsed = c;
+  document.querySelector("#banner .actions button").textContent = c ? "展开 ▴" : "收起 ▾";
+  save();
+}
 function save(){
   try{
     localStorage.setItem(LS_KEY, JSON.stringify(state));
@@ -354,6 +388,12 @@ function analyze(h){
 
 /* ============ 渲染 ============ */
 function render(){
+  // 恢复公示横幅折叠状态（仅首次）
+  if(state.bannerCollapsed && !render._bannerInited){
+    const b = document.getElementById("banner");
+    if(b){ b.classList.add("collapsed"); const btn = b.querySelector(".actions button"); if(btn) btn.textContent = "展开 ▴"; }
+    render._bannerInited = true;
+  }
   renderCards();
   renderAlerts();
   renderPortfolios();
