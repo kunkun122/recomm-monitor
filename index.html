@@ -70,7 +70,14 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
 .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:0 0 10px;}
 .note-inline{font-size:12px; color:var(--muted);}
 .empty-hint{color:var(--muted); font-size:13px; padding:6px 2px;}
-@media print{ .btn,.gallery .del,.upl{display:none;} .pf{break-inside:avoid;} }
+.catbar{display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; align-items:center;}
+.catbtn{border:1px solid var(--border); background:#fff; color:#334155; border-radius:20px; padding:6px 15px; cursor:pointer; font-size:13px; font-weight:600; transition:.15s;}
+.catbtn:hover{border-color:var(--blue); color:var(--blue);}
+.catbtn.on{background:var(--blue); color:#fff; border-color:var(--blue);}
+.sechead{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:20px 0 8px; padding:9px 14px; background:linear-gradient(90deg,#eef2ff 0%,#f8fafc 100%); border-left:4px solid var(--blue); border-radius:6px;}
+.sechead h3{font-size:15px; font-weight:700;}
+.sechead .cnt{font-size:12px; color:var(--muted); margin-left:auto;}
+@media print{ .btn,.gallery .del,.upl,.catbar{display:none;} .pf{break-inside:avoid;} }
 </style>
 </head>
 <body>
@@ -98,8 +105,10 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
   </div>
 
   <div class="toolbar">
-    <span class="note-inline">提示：累计涨幅每周五收盘后照截图手动更新（点击单元格可直接编辑）；现价 / MA5 / MA10 优先采用通达信实时行情（每日 15:30 由自动化任务更新写入 quotes.js），页面内刷新时缺失标的自动回退腾讯行情接口；红涨绿跌。成本价默认取截图中的参考价（即买入参考价），可点击单元格修正。</span>
+    <span class="note-inline">组合已按栏目分为「鑫汇盈 / 藏金阁 / 选股宝」三类，可用上方筛选按钮切换；藏金阁与选股宝为新栏目，目前尚无持仓，录入后可正常监控。累计涨幅每周五收盘后照截图手动更新（点击单元格可直接编辑）；现价 / MA5 / MA10 优先采用通达信实时行情（每日 15:30 由自动化任务更新写入 quotes.js），页面内刷新时缺失标的自动回退腾讯行情接口；红涨绿跌。成本价默认取截图中的参考价（即买入参考价），可点击单元格修正。</span>
   </div>
+
+  <div class="catbar" id="catBar"></div>
 
   <div id="pfList"></div>
 
@@ -123,16 +132,16 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
 const DEFAULT_DATA = {
   updatedAt: "2026-10-12",
   portfolios: [
-    {id:"16438", name:"涌金科创价值优选", holdings:[
+    {id:"16438", cat:"鑫汇盈", name:"涌金科创价值优选", holdings:[
       {name:"许继电气", code:"000400", buyDate:"2025-10-14", pct:-20.44, ref:27.76}
     ]},
-    {id:"16492", name:"景气轮动ETF", holdings:[
+    {id:"16492", cat:"鑫汇盈", name:"景气轮动ETF", holdings:[
       {name:"化工ETF华宝", code:"516020", buyDate:"2026-09-10", pct:-9.95, ref:0.864},
       {name:"云计算ETF鹏华", code:"159739", buyDate:"2026-08-14", pct:-14.15, ref:0.834},
       {name:"电力ETF华泰柏瑞", code:"561560", buyDate:"2026-08-04", pct:-2.22, ref:1.305},
       {name:"汽车ETF国泰", code:"516110", buyDate:"2025-09-23", pct:-30.94, ref:1.516}
     ]},
-    {id:"16435", name:"清泰价值优选组合", holdings:[
+    {id:"16435", cat:"鑫汇盈", name:"清泰价值优选组合", holdings:[
       {name:"亨通光电", code:"600487", buyDate:"2026-10-08", pct:-9.35, ref:55.3},
       {name:"宝信软件", code:"600845", buyDate:"2026-09-23", pct:-4.06, ref:18.45},
       {name:"中国稀土", code:"000831", buyDate:"2026-09-22", pct:-12.89, ref:55.45},
@@ -143,7 +152,7 @@ const DEFAULT_DATA = {
       {name:"中国重汽", code:"000951", buyDate:"2026-07-27", pct:-8.40, ref:22.15},
       {name:"中兴通讯", code:"000063", buyDate:"2026-07-16", pct:-28.69, ref:40.38}
     ]},
-    {id:"16560", name:"艮山价值优选组合", holdings:[
+    {id:"16560", cat:"鑫汇盈", name:"艮山价值优选组合", holdings:[
       {name:"亨通光电", code:"600487", buyDate:"2026-10-08", pct:-9.35, ref:55.3},
       {name:"宝信软件", code:"600845", buyDate:"2026-09-23", pct:-3.96, ref:18.43},
       {name:"中国稀土", code:"000831", buyDate:"2026-09-22", pct:-12.82, ref:55.40},
@@ -154,23 +163,23 @@ const DEFAULT_DATA = {
       {name:"中国重汽", code:"000951", buyDate:"2026-07-27", pct:-8.31, ref:22.13},
       {name:"中兴通讯", code:"000063", buyDate:"2026-07-16", pct:-28.61, ref:40.33}
     ]},
-    {id:"16449", name:"西湖价值全球ETF", holdings:[
+    {id:"16449", cat:"鑫汇盈", name:"西湖价值全球ETF", holdings:[
       {name:"红利低波100ETF景顺", code:"515100", buyDate:"2024-11-29", pct:-0.76, ref:1.449},
       {name:"十年国债ETF国泰", code:"511260", buyDate:"2024-11-25", pct:2.37, ref:131.829}
     ]},
-    {id:"16553", name:"凤山价值优选组合", holdings:[
+    {id:"16553", cat:"鑫汇盈", name:"凤山价值优选组合", holdings:[
       {name:"洛阳钼业", code:"603993", buyDate:"2026-09-23", pct:-5.42, ref:17.9},
       {name:"中广天择", code:"603721", buyDate:"2026-09-22", pct:6.98, ref:18.49},
       {name:"浪潮信息", code:"000977", buyDate:"2026-09-22", pct:-14.82, ref:73.09},
       {name:"京泉华", code:"002885", buyDate:"2026-09-04", pct:-19.44, ref:29.32}
     ]},
-    {id:"16482", name:"武林价值优选组合", holdings:[
+    {id:"16482", cat:"鑫汇盈", name:"武林价值优选组合", holdings:[
       {name:"洛阳钼业", code:"603993", buyDate:"2026-09-23", pct:-5.53, ref:17.9},
       {name:"中广天择", code:"603721", buyDate:"2026-09-22", pct:6.70, ref:18.5},
       {name:"浪潮信息", code:"000977", buyDate:"2026-09-22", pct:-14.89, ref:73.05},
       {name:"京泉华", code:"002885", buyDate:"2026-09-04", pct:-19.09, ref:29.18}
     ]},
-    {id:"16478", name:"望江价值优选组合", holdings:[
+    {id:"16478", cat:"鑫汇盈", name:"望江价值优选组合", holdings:[
       {name:"紫光股份", code:"000938", buyDate:"2026-09-22", pct:-16.78, ref:34.14},
       {name:"永鼎股份", code:"600105", buyDate:"2026-09-21", pct:-33.93, ref:46.51},
       {name:"立讯精密", code:"002475", buyDate:"2026-08-27", pct:-18.54, ref:57.02},
@@ -178,8 +187,8 @@ const DEFAULT_DATA = {
       {name:"拓维信息", code:"002261", buyDate:"2026-07-22", pct:-20.69, ref:28.91},
       {name:"芭田股份", code:"002170", buyDate:"2026-05-08", pct:-18.02, ref:13.7}
     ]},
-    {id:"16574", name:"朝晖价值优选组合", holdings:[]},
-    {id:"16466", name:"清波价值优选组合", holdings:[
+    {id:"16574", cat:"鑫汇盈", name:"朝晖价值优选组合", holdings:[]},
+    {id:"16466", cat:"鑫汇盈", name:"清波价值优选组合", holdings:[
       {name:"粤桂股份", code:"000833", buyDate:"2026-10-12", pct:-3.93, ref:19.61},
       {name:"新华网", code:"603888", buyDate:"2026-09-22", pct:-6.01, ref:18.81},
       {name:"圣泉集团", code:"605589", buyDate:"2026-09-21", pct:-18.64, ref:41.42},
@@ -188,7 +197,7 @@ const DEFAULT_DATA = {
       {name:"中国化学", code:"601117", buyDate:"2026-08-06", pct:-6.49, ref:7.8},
       {name:"上海电力", code:"600021", buyDate:"2026-08-03", pct:-13.54, ref:14.77}
     ]},
-    {id:"16443", name:"候潮价值优选组合", holdings:[
+    {id:"16443", cat:"鑫汇盈", name:"候潮价值优选组合", holdings:[
       {name:"保利发展", code:"600048", buyDate:"2026-09-22", pct:-2.10, ref:5.72},
       {name:"航发动力", code:"600893", buyDate:"2026-09-15", pct:-7.60, ref:40.42},
       {name:"中信证券", code:"600030", buyDate:"2026-08-31", pct:-5.91, ref:27.57},
@@ -197,35 +206,49 @@ const DEFAULT_DATA = {
       {name:"中国核电", code:"601985", buyDate:"2026-06-17", pct:0.55, ref:9.27},
       {name:"华电国际", code:"600027", buyDate:"2026-06-12", pct:5.08, ref:5.06}
     ]},
-    {id:"16448", name:"钱塘价值优选组合", holdings:[
+    {id:"16448", cat:"鑫汇盈", name:"钱塘价值优选组合", holdings:[
       {name:"中科曙光", code:"603019", buyDate:"2026-08-28", pct:-15.66, ref:87.18},
       {name:"杭州银行", code:"600926", buyDate:"2026-04-21", pct:3.46, ref:17.51}
     ]},
-    {id:"16442", name:"庆春价值优选组合", holdings:[
+    {id:"16442", cat:"鑫汇盈", name:"庆春价值优选组合", holdings:[
       {name:"新华网", code:"603888", buyDate:"2026-09-22", pct:-6.36, ref:18.88}
     ]},
-    {id:"16538", name:"凤起价值优选组合", holdings:[
+    {id:"16538", cat:"鑫汇盈", name:"凤起价值优选组合", holdings:[
       {name:"烽火通信", code:"600498", buyDate:"2026-09-21", pct:-28.12, ref:44.84},
       {name:"山东黄金", code:"600547", buyDate:"2026-08-21", pct:-26.92, ref:36.4},
       {name:"北特科技", code:"603009", buyDate:"2026-07-06", pct:-22.84, ref:53.9},
       {name:"中国国航", code:"601111", buyDate:"2026-06-15", pct:-12.10, ref:6.53}
     ]},
-    {id:"16503", name:"德胜价值优选组合", holdings:[
+    {id:"16503", cat:"鑫汇盈", name:"德胜价值优选组合", holdings:[
       {name:"英科医疗", code:"300677", buyDate:"2026-09-22", pct:-11.06, ref:51.19},
       {name:"烽火通信", code:"600498", buyDate:"2026-09-21", pct:-28.07, ref:44.81},
       {name:"山东黄金", code:"600547", buyDate:"2026-08-21", pct:-26.92, ref:36.4},
       {name:"北特科技", code:"603009", buyDate:"2026-07-06", pct:-22.87, ref:53.92},
       {name:"中国国航", code:"601111", buyDate:"2026-06-15", pct:-12.10, ref:6.53}
     ]},
-    {id:"16544", name:"河坊景气行业ETF", holdings:[
+    {id:"16544", cat:"鑫汇盈", name:"河坊景气行业ETF", holdings:[
       {name:"创业板新能源ETF华夏", code:"159368", buyDate:"2026-05-08", pct:-32.30, ref:1.734},
       {name:"化工ETF鹏华", code:"159870", buyDate:"2026-05-06", pct:-24.09, ref:0.959}
-    ]}
+    ]},
+    {id:"CG01", cat:"藏金阁", name:"西湖价值精选", holdings:[]},
+    {id:"CG02", cat:"藏金阁", name:"西湖趋势精选", holdings:[]},
+    {id:"CG03", cat:"藏金阁", name:"价值护城河", holdings:[]},
+    {id:"CG04", cat:"藏金阁", name:"西湖满仓轮动精选", holdings:[]},
+    {id:"CG05", cat:"藏金阁", name:"西湖热点轮动精选", holdings:[]},
+    {id:"CG06", cat:"藏金阁", name:"西湖业绩驱动精选", holdings:[]},
+    {id:"CG07", cat:"藏金阁", name:"景气提升精选", holdings:[]},
+    {id:"CG08", cat:"藏金阁", name:"两融精选1号", holdings:[]},
+    {id:"CG09", cat:"藏金阁", name:"金港湾1号", holdings:[]},
+    {id:"XGB01", cat:"选股宝", name:"选股宝-孔柯卿", holdings:[]},
+    {id:"XGB02", cat:"选股宝", name:"选股宝-方丹", holdings:[]}
   ]
 };
 
 /* ============ 状态与存储 ============ */
-const LS_KEY = "recommMonitor.v3";
+const LS_KEY = "recommMonitor.v4";
+/* 栏目分类：鑫汇盈（存量） / 藏金阁 / 选股宝 */
+const CATEGORIES = ["鑫汇盈", "藏金阁", "选股宝"];
+let filterCat = "全部";
 let state;
 try{ state = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ state = null; }
 if(!state || !state.portfolios){
@@ -349,7 +372,7 @@ function renderCards(){
     if(a.level==="stop") stop++; else if(a.level==="near") near++; else if(a.level==="ma") ma++; else ok++;
   }));
   document.getElementById("cards").innerHTML = `
-    <div class="card"><div class="num">${total}</div><div class="lbl">监控持仓总数（${state.portfolios.length} 个组合）</div></div>
+    <div class="card"><div class="num">${total}</div><div class="lbl">监控持仓总数（${state.portfolios.length} 个组合 / ${CATEGORIES.length} 个栏目）</div></div>
     <div class="card"><div class="num" style="color:var(--red)">${stop}</div><div class="lbl">🔴 强制止损（亏损≥15%）</div></div>
     <div class="card"><div class="num" style="color:var(--warn)">${near}</div><div class="lbl">🟠 接近止损（-12%~-15%）</div></div>
     <div class="card"><div class="num" style="color:var(--blue)">${ma}</div><div class="lbl">🔵 跌破均线提示</div></div>
@@ -385,11 +408,9 @@ function levelTag(a){
   return `<span class="tag tag-ok">正常</span>`;
 }
 
-function renderPortfolios(){
-  const box = document.getElementById("pfList");
-  box.innerHTML = state.portfolios.map((p,pi)=>{
-    const counts = {stop:0,near:0,ma:0};
-    p.holdings.forEach(h=>{ const a=analyze(h); if(a.level==="stop")counts.stop++; else if(a.level==="near")counts.near++; else if(a.level==="ma")counts.ma++; });
+function pfCardHtml(p, pi){
+  const counts = {stop:0,near:0,ma:0};
+  p.holdings.forEach(h=>{ const a=analyze(h); if(a.level==="stop")counts.stop++; else if(a.level==="near")counts.near++; else if(a.level==="ma")counts.ma++; });
     const imgs = state.images[p.id] || [];
     const rows = p.holdings.map((h,hi)=>{
       const a = analyze(h);
@@ -434,7 +455,46 @@ function renderPortfolios(){
         <div style="margin-top:8px;"><button class="btn small" onclick="addHolding(${pi})">+ 添加持仓</button></div>
       </div>
     </div>`;
+}
+
+function pfStats(p){
+  const c = {total:p.holdings.length, stop:0, near:0, ma:0};
+  p.holdings.forEach(h=>{ const a=analyze(h); if(a.level==="stop")c.stop++; else if(a.level==="near")c.near++; else if(a.level==="ma")c.ma++; });
+  return c;
+}
+
+function renderCatBar(){
+  const bar = document.getElementById("catBar");
+  const opts = ["全部"].concat(CATEGORIES);
+  bar.innerHTML = `<span class="note-inline">栏目筛选：</span>` + opts.map(c=>{
+    const n = c==="全部" ? state.portfolios.length : state.portfolios.filter(p=>(p.cat||"鑫汇盈")===c).length;
+    return `<button class="catbtn ${filterCat===c?"on":""}" onclick="setCat('${c}')">${c}（${n}）</button>`;
   }).join("");
+}
+
+function setCat(c){ filterCat = c; render(); }
+
+function renderPortfolios(){
+  const box = document.getElementById("pfList");
+  renderCatBar();
+  const cats = (filterCat==="全部") ? CATEGORIES : [filterCat];
+  let html = "";
+  cats.forEach(cat=>{
+    const idxs = [];
+    state.portfolios.forEach((p,pi)=>{ if((p.cat||"鑫汇盈")===cat) idxs.push(pi); });
+    if(!idxs.length) return;
+    let stop=0, near=0, ma=0, tot=0;
+    idxs.forEach(pi=>{ const st=pfStats(state.portfolios[pi]); stop+=st.stop; near+=st.near; ma+=st.ma; tot+=st.total; });
+    html += `<div class="sechead"><h3>📁 ${cat} 栏目</h3>
+      <span class="note-inline">${idxs.length} 个组合 · ${tot} 只持仓</span>
+      ${stop? `<span class="badge b-stop">强制止损 ${stop}</span>`:""}
+      ${near? `<span class="badge b-warn">接近止损 ${near}</span>`:""}
+      ${ma? `<span class="badge b-ma">破均线 ${ma}</span>`:""}
+      <span class="cnt">${cat==="鑫汇盈"?"存量组合":(cat==="藏金阁"?"新增栏目 · 待录入持仓":"新增栏目 · 待录入持仓")}</span>
+    </div>`;
+    html += idxs.map(pi=>pfCardHtml(state.portfolios[pi], pi)).join("");
+  });
+  box.innerHTML = html;
 }
 
 function toggleBody(pi){
@@ -474,7 +534,9 @@ function resetDefault(){
 function addPortfolio(){
   const name = prompt("组合名称："); if(!name) return;
   const id = prompt("组合ID：", String(Date.now()).slice(-5)); if(!id) return;
-  state.portfolios.push({id, name, holdings:[]});
+  const catSel = prompt("所属栏目（输入序号）：\n1 = 鑫汇盈\n2 = 藏金阁\n3 = 选股宝", "1");
+  const cat = CATEGORIES[(parseInt(catSel,10)||1)-1] || "鑫汇盈";
+  state.portfolios.push({id, cat, name, holdings:[]});
   save(); render();
 }
 
