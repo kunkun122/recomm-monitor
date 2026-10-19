@@ -1027,7 +1027,7 @@ function loadScript(url, charset){
   });
 }
 // 成本价：截图中的“参考价”即买入参考价（成本价）；若手工修正过则用手工值
-// 实时收益 = 最新价 / 成本价 - 1，与每周五截图录入的“累计涨幅”互为校验
+// 最新价相对成本价的红绿着色 = 最新价 / 成本价 - 1；止损判定只看每周截图录入的"累计涨幅"
 function estCost(h){ if(h.cost != null && h.cost !== "") return h.cost; return (h.ref != null ? h.ref : null); }
 
 /* ============ 行情引擎（腾讯公开接口，仅取数） ============ */
@@ -1084,11 +1084,10 @@ function analyze(h){
     else if(r.below5) r.maText = "跌破5日线";
     else if(r.below10) r.maText = "跌破10日线";
   }
-  const pctMin = Math.min(h.pct==null? 0 : h.pct, r.rtPct==null? 0 : r.rtPct);
-  if(h.pct<=-15 || (r.rtPct!=null && r.rtPct<=-15)) r.level = "stop";
-  else if(h.pct<=-12 || (r.rtPct!=null && r.rtPct<=-12)) r.level = "near";
+  // 止损判定统一以每周截图录入的"累计涨幅"为准；rtPct 仅用于"最新价"列的红绿着色，不再参与判定
+  if(h.pct<=-15) r.level = "stop";
+  else if(h.pct<=-12) r.level = "near";
   else if(r.below5 || r.below10) r.level = "ma";
-  r.pctMin = pctMin;
   return r;
 }
 
@@ -1130,10 +1129,9 @@ function renderAlerts(){
   state.portfolios.forEach(p=>p.holdings.forEach(h=>{
     const a = analyze(h);
     if(a.level==="stop"){
-      const src = h.pct<=-15 ? "累计涨幅" : "实时估算";
-      items.push({lv:0, html:`<b>【强制止损】</b>${p.name}（${p.id}）· ${h.name} ${h.code}：${src}亏损 ${fmtPct(h.pct<=-15? h.pct : a.rtPct)}，已触发总部 15% 硬性止损线，请立即按流程处置`, cls:"li-stop"});
+      items.push({lv:0, html:`<b>【强制止损】</b>${p.name}（${p.id}）· ${h.name} ${h.code}：累计亏损 ${fmtPct(h.pct)}，已触发总部 15% 硬性止损线，请立即按流程处置`, cls:"li-stop"});
     }else if(a.level==="near"){
-      items.push({lv:1, html:`<b>【接近止损】</b>${p.name}（${p.id}）· ${h.name} ${h.code}：亏损 ${fmtPct(Math.min(h.pct, a.rtPct==null?h.pct:a.rtPct))}，距 15% 止损线已不足 3 个百分点，重点关注`, cls:"li-warn"});
+      items.push({lv:1, html:`<b>【接近止损】</b>${p.name}（${p.id}）· ${h.name} ${h.code}：累计亏损 ${fmtPct(h.pct)}，距 15% 止损线已不足 3 个百分点，重点关注`, cls:"li-warn"});
     }
     if(a.below5 || a.below10){
       items.push({lv:2, html:`<b>【均线告警】</b>${p.name}（${p.id}）· ${h.name} ${h.code}：现价 ${fmt(a.price)} 已${a.maText}（MA5 ${fmt(a.ma5)} / MA10 ${fmt(a.ma10)}），短期趋势走弱`, cls:"li-ma"});
@@ -1167,7 +1165,6 @@ function pfCardHtml(p, pi){
         <td><input class="cell-in" type="number" step="0.001" value="${fmt(estCost(h),3)}" onchange="editCost(${pi},${hi},this.value)" title="买入成本价（可修改）"></td>
         <td><input class="cell-in ${pctCls(h.pct)}" type="number" step="0.01" value="${h.pct}" onchange="editPct(${pi},${hi},this.value)" title="累计涨幅%（每周五照截图更新）"></td>
         <td class="${pctCls(a.rtPct==null?0:a.rtPct)}">${fmt(a.price, h.ref<10?3:2)}</td>
-        <td class="${pctCls(a.rtPct==null?0:a.rtPct)}">${a.rtPct==null?"—":fmtPct(a.rtPct)}</td>
         <td>${fmt(a.ma5, h.ref<10?3:2)}</td>
         <td>${fmt(a.ma10, h.ref<10?3:2)}</td>
         <td>${a.maText? `<span class="tag ${a.below5&&a.below10?"tag-ma10":(a.below5?"tag-ma5":"tag-ma10")}">${a.maText}</span>` : `<span class="tag tag-ok">均线上方</span>`}</td>
@@ -1196,7 +1193,7 @@ function pfCardHtml(p, pi){
         </div>
         ${p.holdings.length? `
         <table>
-          <thead><tr><th>个股名称</th><th>代码</th><th>买入日期</th><th title="截图中的参考价，可手工修正">成本价</th><th title="每周五收盘后按截图录入">累计涨幅%</th><th>最新价</th><th title="最新价 ÷ 成本价 - 1">实时收益%</th><th>MA5</th><th>MA10</th><th>均线状态</th><th>综合状态</th><th></th></tr></thead>
+          <thead><tr><th>个股名称</th><th>代码</th><th>买入日期</th><th title="截图中的参考价，可手工修正">成本价</th><th title="每周收盘后按截图录入，止损判定以此为准">累计涨幅%</th><th title="每日收盘后自动更新；红=相对成本价上涨，绿=下跌">最新价</th><th>MA5</th><th>MA10</th><th>均线状态</th><th>综合状态</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>` : `<div class="empty-hint">该组合当前无持仓。</div>`}
         <div style="margin-top:8px;"><button class="btn small" onclick="addHolding(${pi})">+ 添加持仓</button></div>
