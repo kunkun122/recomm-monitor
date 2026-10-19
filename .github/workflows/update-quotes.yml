@@ -1,0 +1,37 @@
+name: 每日收盘后更新行情数据
+
+on:
+  schedule:
+    # UTC 07:30 = 北京时间 15:30（周一至周五）
+    - cron: "30 7 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-quotes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 拉取行情并生成 quotes.js
+        run: python scripts/update_quotes.py
+
+      - name: 提交更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain quotes.js)" ]; then
+            git add quotes.js
+            git commit -m "chore: 更新收盘行情 $(TZ=Asia/Shanghai date +%Y-%m-%d)"
+            git push
+          else
+            echo "quotes.js 无变化，跳过提交"
+          fi
