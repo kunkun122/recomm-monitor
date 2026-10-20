@@ -53,6 +53,7 @@ tr:hover td{background:#f8fafc;}
 .tag{display:inline-block; font-size:11px; padding:2px 7px; border-radius:4px; font-weight:600; white-space:nowrap;}
 .tag-stop{background:var(--red); color:#fff;}
 .tag-near{background:#fef3c7; color:#92400e; border:1px solid #fcd34d;}
+.tag-warn2{background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;}
 .tag-ma5{background:#dbeafe; color:#1e40af;}
 .tag-ma10{background:#ede9fe; color:#5b21b6;}
 .tag-ok{background:#f1f5f9; color:#64748b;}
@@ -143,7 +144,7 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
     <b>使用说明</b><br>
     1. <b>每周五收盘后</b>：将各组合截图上传到对应组合卡片（也可点右上角“周五截图归档”批量上传后自行分配），并按截图更新每只持仓的“累计涨幅”。<br>
     2. <b>每个交易日收盘后</b>：点击“刷新行情 / 均线检查”（若 15:00 后打开页面会自动执行一次），系统自动拉取最新收盘价与日 K，计算 MA5 / MA10 并提示跌破情况。<br>
-    3. 状态优先级：<span class="tag tag-stop">强制止损</span>（亏损≥15%，总部硬性规定）→ <span class="tag tag-near">接近止损</span>（-15%~-12% 预警区）→ <span class="tag tag-ma5">跌破5日线</span> / <span class="tag tag-ma10">跌破10日线</span> → <span class="tag tag-ok">正常</span>。<br>
+    3. 状态优先级：<span class="tag tag-stop">强制止损</span>（亏损≥15%，总部硬性规定）→ <span class="tag tag-near">接近止损</span>（-15%~-12% 预警区）→ <span class="tag tag-warn2">止损警示</span>（亏损>10% 且同时跌破5日&10日线）→ <span class="tag tag-ma5">跌破5日线</span> / <span class="tag tag-ma10">跌破10日线</span> → <span class="tag tag-ok">正常</span>。<br>
     4. 数据（含截图压缩件）保存在本机浏览器 localStorage，请定期“导出数据”备份；更换电脑或清理浏览器缓存前务必先导出。<br>
     <span id="storageInfo"></span>
   </footer>
@@ -1087,6 +1088,7 @@ function analyze(h){
   // 止损判定统一以每周截图录入的"累计涨幅"为准；rtPct 仅用于"最新价"列的红绿着色，不再参与判定
   if(h.pct<=-15) r.level = "stop";
   else if(h.pct<=-12) r.level = "near";
+  else if(h.pct<=-10 && r.below5 && r.below10) r.level = "warn2";
   else if(r.below5 || r.below10) r.level = "ma";
   return r;
 }
@@ -1146,6 +1148,7 @@ function renderAlerts(){
 function levelTag(a){
   if(a.level==="stop") return `<span class="tag tag-stop">强制止损</span>`;
   if(a.level==="near") return `<span class="tag tag-near">接近止损</span>`;
+  if(a.level==="warn2") return `<span class="tag tag-warn2">止损警示</span>`;
   if(a.below5&&a.below10) return `<span class="tag tag-ma10">破5&10日线</span>`;
   if(a.below5) return `<span class="tag tag-ma5">破5日线</span>`;
   if(a.below10) return `<span class="tag tag-ma10">破10日线</span>`;
@@ -1153,8 +1156,8 @@ function levelTag(a){
 }
 
 function pfCardHtml(p, pi){
-  const counts = {stop:0,near:0,ma:0};
-  p.holdings.forEach(h=>{ const a=analyze(h); if(a.level==="stop")counts.stop++; else if(a.level==="near")counts.near++; else if(a.level==="ma")counts.ma++; });
+  const counts = {stop:0,near:0,warn2:0,ma:0};
+  p.holdings.forEach(h=>{ const a=analyze(h); if(a.level==="stop")counts.stop++; else if(a.level==="near")counts.near++; else if(a.level==="warn2")counts.warn2++; else if(a.level==="ma")counts.ma++; });
     const imgs = state.images[p.id] || [];
     const rows = p.holdings.map((h,hi)=>{
       const a = analyze(h);
@@ -1179,6 +1182,7 @@ function pfCardHtml(p, pi){
         <span class="badge b-total">持仓 ${p.holdings.length}</span>
         ${counts.stop? `<span class="badge b-stop">强制止损 ${counts.stop}</span>`:""}
         ${counts.near? `<span class="badge b-warn">接近止损 ${counts.near}</span>`:""}
+        ${counts.warn2? `<span class="badge b-stop">止损警示 ${counts.warn2}</span>`:""}
         ${counts.ma? `<span class="badge b-ma">破均线 ${counts.ma}</span>`:""}
         <span class="note-inline" id="tg-${pi}" style="margin-left:auto">收起 ▲</span>
       </div>
