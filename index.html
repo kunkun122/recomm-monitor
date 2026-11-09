@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>荐股组合风控监控工作台</title>
+<title>组合荐股情况工作台</title>
 <style>
 :root{
   --bg:#f4f6f9; --panel:#ffffff; --border:#e3e8ef; --text:#1f2937; --muted:#6b7280;
@@ -61,7 +61,7 @@ select.pick-st{cursor:pointer; font-family:inherit; font-weight:600;}
 select.pick-st:hover{filter:brightness(0.96);}
 select.pick-st option{font-weight:600;}
 /* ===== 顶级栏目导航 ===== */
-.mainnav{display:flex; gap:6px; margin:14px 0 0; flex-wrap:wrap; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:6px;}
+.mainnav{display:flex; gap:6px; margin:0 0 12px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:6px;}
 .mainnav button{border:none; background:transparent; color:#475569; font-size:14px; font-weight:700; padding:9px 20px; border-radius:8px; cursor:pointer; font-family:inherit; transition:.15s;}
 .mainnav button:hover{background:#f1f5f9;}
 .mainnav button.on{background:linear-gradient(135deg,#1e3a8a,#2b5fd9); color:#fff; box-shadow:0 2px 8px rgba(43,95,217,.28);}
@@ -144,9 +144,15 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
     <h2>🛑 部门止损警示公示规则（每周五收盘后执行）</h2>
     <p>每周五收盘后，对组合内所有个股进行排查，筛选出<b>亏损幅度超 10%</b>且<b>同时跌破 5 日、10 日均线</b>的标的，在<b>部门排班表中做止损警示公示</b>；<b>相关责任人须于下周二下班前完成处理</b>。</p>
   </div>
+  <nav class="mainnav" id="mainNav">
+    <button class="on" data-view="monitor" onclick="setView('monitor')">📊 组合监控</button>
+    <button data-view="picks" onclick="setView('picks')">📖 荐股宝典</button>
+    <button data-view="review" onclick="setView('review')">📅 周度复盘</button>
+  </nav>
+
   <header class="bar">
     <div>
-      <h1>🛡️ 荐股组合风控监控工作台</h1>
+      <h1>🛡️ 组合荐股情况工作台</h1>
       <div class="sub">总部硬性规则：累计亏损 ≥ 15% 强制止损 ｜ 辅助提示：实时收盘价跌破 5 日 / 10 日均线 ｜ 网页版每个访问者看到的持仓数据为公开默认数据，个人修改只保存在自己浏览器</div>
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -158,12 +164,6 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
       <label class="btn ghost" style="margin:0;">📎 周五截图归档<input type="file" id="fileBulkImg" accept="image/*" multiple style="display:none;"></label>
     </div>
   </header>
-
-  <nav class="mainnav" id="mainNav">
-    <button class="on" data-view="monitor" onclick="setView('monitor')">📊 组合监控</button>
-    <button data-view="picks" onclick="setView('picks')">📖 荐股宝典</button>
-    <button data-view="review" onclick="setView('review')">📅 周度复盘</button>
-  </nav>
 
   <div class="cards" id="cards"></div>
 
