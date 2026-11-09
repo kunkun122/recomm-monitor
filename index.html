@@ -153,7 +153,7 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
     <button class="on" data-view="monitor" onclick="setView('monitor')">📊 组合监控</button>
     <button data-view="picks" onclick="setView('picks')">📖 荐股宝典</button>
     <button data-view="review" onclick="setView('review')">📅 周度复盘</button>
-    <button data-view="docs" onclick="setView('docs')">📎 老师文档</button>
+    <button data-view="docs" onclick="setView('docs')">📎 每日思考WPS链接</button>
   </nav>
 
   <header class="bar">
@@ -224,7 +224,7 @@ if(state.picks && state.picks.some(p=>p.name==="哪托传媒")){ state.picks.for
 if(!state.reviews || !state.reviews.length){
   if(DEFAULT_DATA.reviews && DEFAULT_DATA.reviews.length){ state.reviews = JSON.parse(JSON.stringify(DEFAULT_DATA.reviews)); save(); }
 }
-/* 老师文档（WPS 云文档导航，2026-11-09 孔柯卿整理） */
+/* 每日思考WPS链接（WPS 云文档导航，2026-11-09 孔柯卿整理） */
 DEFAULT_DATA.docs = [
   {"name":"2026每日复盘","url":"https://www.kdocs.cn/l/cfWOjkOC81LI"},
   {"name":"高羽每日积累（2026年）","url":"https://www.kdocs.cn/l/cseOrp1R1QsO"},
@@ -236,7 +236,7 @@ DEFAULT_DATA.docs = [
   {"name":"每日思考WPS链接","url":"https://www.kdocs.cn/l/chw8baSGz3yo?f=301"}
 ];
 if(!state.docs || !state.docs.length){ state.docs = JSON.parse(JSON.stringify(DEFAULT_DATA.docs)); save(); }
-/* 老本地数据补全：新增的老师文档链接（老缓存无此条时自动追加） */
+/* 老本地数据补全：新增的文档链接（老缓存无此条时自动追加） */
 if(state.docs && !state.docs.some(d=>d.url && d.url.indexOf("chw8baSGz3yo")>=0)){
   state.docs.push(JSON.parse(JSON.stringify(DEFAULT_DATA.docs[DEFAULT_DATA.docs.length-1]))); save();
 }
@@ -477,7 +477,7 @@ function renderCatBar(){
 function setCat(c){ filterCat = c; if(c!=="荐股宝典"&&c!=="周度复盘") view="monitor"; render(); }
 function setView(v){
   view = v;
-  filterCat = v==="picks" ? "荐股宝典" : (v==="review" ? "周度复盘" : (v==="docs" ? "老师文档" : "全部"));
+  filterCat = v==="picks" ? "荐股宝典" : (v==="review" ? "周度复盘" : (v==="docs" ? "每日思考WPS链接" : "全部"));
   render();
 }
 function syncView(){
@@ -635,7 +635,7 @@ function renderPortfolios(){
   renderCatBar();
   if(view==="picks" || filterCat==="荐股宝典"){ box.innerHTML = renderPicks(); return; }
   if(view==="review" || filterCat==="周度复盘"){ box.innerHTML = renderReviews(); return; }
-  if(view==="docs" || filterCat==="老师文档"){ box.innerHTML = renderDocs(); return; }
+  if(view==="docs" || filterCat==="每日思考WPS链接"){ box.innerHTML = renderDocs(); return; }
   const cats = (filterCat==="全部") ? CATEGORIES : [filterCat];
   let html = "";
   cats.forEach(cat=>{
@@ -656,7 +656,7 @@ function renderPortfolios(){
   box.innerHTML = html;
 }
 
-/* ============ 老师文档（WPS 云文档导航） ============ */
+/* ============ 每日思考WPS链接（WPS 云文档导航） ============ */
 function renameDoc(i, v){
   if(!state.docs || !state.docs[i]) return;
   v = (v||"").trim();
@@ -669,7 +669,7 @@ function renameDoc(i, v){
 }
 function renderDocs(){
   const docs = state.docs||[];
-  let html = `<div class="sechead"><h3>📎 老师文档 · WPS 云文档导航</h3>
+  let html = `<div class="sechead"><h3>📎 每日思考WPS链接</h3>
     <span class="note-inline">共 ${docs.length} 篇文档 ｜ 文档名称点击可直接修改，自动保存到本机</span></div>`;
   if(!docs.length) return html + `<div class="empty-hint">暂无文档链接。</div>`;
   html += `<div class="pf"><div class="pf-body" style="padding-top:6px;">
