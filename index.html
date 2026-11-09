@@ -232,9 +232,14 @@ DEFAULT_DATA.docs = [
   {"name":"策略信息（2026.8-12）","url":"https://www.kdocs.cn/l/cvFmwU212kZf"},
   {"name":"每日思考2026","url":"https://www.kdocs.cn/l/cqn8E6KSL0y9"},
   {"name":"未命名文档（待补充名称）","url":"https://www.kdocs.cn/l/cmXH4o8Cdtct"},
-  {"name":"Zhan复盘纪要","url":"https://www.kdocs.cn/l/cebMioeo9U0f"}
+  {"name":"Zhan复盘纪要","url":"https://www.kdocs.cn/l/cebMioeo9U0f"},
+  {"name":"每日思考WPS链接","url":"https://www.kdocs.cn/l/chw8baSGz3yo?f=301"}
 ];
 if(!state.docs || !state.docs.length){ state.docs = JSON.parse(JSON.stringify(DEFAULT_DATA.docs)); save(); }
+/* 老本地数据补全：新增的老师文档链接（老缓存无此条时自动追加） */
+if(state.docs && !state.docs.some(d=>d.url && d.url.indexOf("chw8baSGz3yo")>=0)){
+  state.docs.push(JSON.parse(JSON.stringify(DEFAULT_DATA.docs[DEFAULT_DATA.docs.length-1]))); save();
+}
 
 function toggleBanner(){
   const b = document.getElementById("banner");
