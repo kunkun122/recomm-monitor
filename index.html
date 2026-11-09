@@ -60,6 +60,8 @@ tr:hover td{background:#f8fafc;}
 select.pick-st{cursor:pointer; font-family:inherit; font-weight:600;}
 select.pick-st:hover{filter:brightness(0.96);}
 select.pick-st option{font-weight:600;}
+.doclink{color:#2b5fd9; font-weight:600; text-decoration:none; white-space:nowrap;}
+.doclink:hover{text-decoration:underline;}
 /* ===== 顶级栏目导航 ===== */
 .mainnav{display:flex; gap:6px; margin:0 0 12px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:6px;}
 .mainnav button{border:none; background:transparent; color:#475569; font-size:14px; font-weight:700; padding:9px 20px; border-radius:8px; cursor:pointer; font-family:inherit; transition:.15s;}
@@ -148,6 +150,7 @@ footer{color:var(--muted); font-size:12px; padding:10px 4px 30px; line-height:1.
     <button class="on" data-view="monitor" onclick="setView('monitor')">📊 组合监控</button>
     <button data-view="picks" onclick="setView('picks')">📖 荐股宝典</button>
     <button data-view="review" onclick="setView('review')">📅 周度复盘</button>
+    <button data-view="docs" onclick="setView('docs')">📎 老师文档</button>
   </nav>
 
   <header class="bar">
@@ -204,7 +207,7 @@ const LS_KEY = "recommMonitor.v10";
 /* 栏目分类：鑫汇盈（存量） / 藏金阁 / 选股宝 */
 const CATEGORIES = ["鑫汇盈", "藏金阁", "选股宝"];
 let filterCat = "全部";
-let view = "monitor"; /* monitor | picks | review */
+let view = "monitor"; /* monitor | picks | review | docs */
 let state;
 try{ state = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ state = null; }
 if(!state || !state.portfolios){
@@ -218,6 +221,17 @@ if(state.picks && state.picks.some(p=>p.name==="哪托传媒")){ state.picks.for
 if(!state.reviews || !state.reviews.length){
   if(DEFAULT_DATA.reviews && DEFAULT_DATA.reviews.length){ state.reviews = JSON.parse(JSON.stringify(DEFAULT_DATA.reviews)); save(); }
 }
+/* 老师文档（WPS 云文档导航，2026-11-09 孔柯卿整理） */
+DEFAULT_DATA.docs = [
+  {"name":"2026每日复盘","url":"https://www.kdocs.cn/l/cfWOjkOC81LI"},
+  {"name":"高羽每日积累（2026年）","url":"https://www.kdocs.cn/l/cseOrp1R1QsO"},
+  {"name":"王华俊选股逻辑","url":"https://www.kdocs.cn/l/cuHEZjTi6CsA"},
+  {"name":"策略信息（2026.8-12）","url":"https://www.kdocs.cn/l/cvFmwU212kZf"},
+  {"name":"每日思考2026","url":"https://www.kdocs.cn/l/cqn8E6KSL0y9"},
+  {"name":"未命名文档（待补充名称）","url":"https://www.kdocs.cn/l/cmXH4o8Cdtct"},
+  {"name":"Zhan复盘纪要","url":"https://www.kdocs.cn/l/cebMioeo9U0f"}
+];
+if(!state.docs || !state.docs.length){ state.docs = JSON.parse(JSON.stringify(DEFAULT_DATA.docs)); save(); }
 
 function toggleBanner(){
   const b = document.getElementById("banner");
@@ -455,7 +469,7 @@ function renderCatBar(){
 function setCat(c){ filterCat = c; if(c!=="荐股宝典"&&c!=="周度复盘") view="monitor"; render(); }
 function setView(v){
   view = v;
-  filterCat = v==="picks" ? "荐股宝典" : (v==="review" ? "周度复盘" : "全部");
+  filterCat = v==="picks" ? "荐股宝典" : (v==="review" ? "周度复盘" : (v==="docs" ? "老师文档" : "全部"));
   render();
 }
 function syncView(){
@@ -524,6 +538,26 @@ function renderPicks(){
       </tbody>
     </table></div></div>`;
   });
+  /* 每周每人荐股次数统计 */
+  const stat = {};
+  weeks.forEach(g=>{ g.rows.forEach(p=>{ stat[p.who] = stat[p.who] || {}; stat[p.who][g.w] = (stat[p.who][g.w]||0) + 1; }); });
+  const people = Object.keys(stat).sort((a,b)=>{
+    const ta = Object.values(stat[a]).reduce((s,x)=>s+x,0), tb = Object.values(stat[b]).reduce((s,x)=>s+x,0);
+    return tb - ta || a.localeCompare(b, "zh");
+  });
+  html += `<div class="sechead"><h4>📊 每周荐股次数统计</h4>
+    <span class="note-inline">行=推荐人（按合计降序），列=推荐周（与上方分组一致），末行为每周合计</span></div>
+  <div class="pf"><div class="pf-body" style="padding-top:6px; overflow-x:auto;">
+  <table>
+    <thead><tr><th>推荐人</th>${weeks.map(g=>`<th>${g.w}</th>`).join("")}<th>合计</th></tr></thead>
+    <tbody>${people.map(who=>{
+      let tot = 0;
+      const cells = weeks.map(g=>{ const c = stat[who][g.w]||0; tot += c; return `<td>${c?`<b>${c}</b>`:"—"}</td>`; }).join("");
+      return `<tr><td><b>${who}</b></td>${cells}<td><b>${tot}</b></td></tr>`;
+    }).join("")}
+    <tr style="background:rgba(43,95,217,0.07);"><td><b>每周合计</b></td>${weeks.map(g=>`<td><b>${g.rows.length}</b></td>`).join("")}<td><b>${picks.length}</b></td></tr>
+    </tbody>
+  </table></div></div>`;
   return html;
 }
 
@@ -593,6 +627,7 @@ function renderPortfolios(){
   renderCatBar();
   if(view==="picks" || filterCat==="荐股宝典"){ box.innerHTML = renderPicks(); return; }
   if(view==="review" || filterCat==="周度复盘"){ box.innerHTML = renderReviews(); return; }
+  if(view==="docs" || filterCat==="老师文档"){ box.innerHTML = renderDocs(); return; }
   const cats = (filterCat==="全部") ? CATEGORIES : [filterCat];
   let html = "";
   cats.forEach(cat=>{
@@ -611,6 +646,26 @@ function renderPortfolios(){
     html += idxs.map(pi=>pfCardHtml(state.portfolios[pi], pi)).join("");
   });
   box.innerHTML = html;
+}
+
+/* ============ 老师文档（WPS 云文档导航） ============ */
+function renderDocs(){
+  const docs = state.docs||[];
+  let html = `<div class="sechead"><h3>📎 老师文档 · WPS 云文档导航</h3>
+    <span class="note-inline">共 ${docs.length} 篇文档，点击「打开」在新窗口访问</span></div>`;
+  if(!docs.length) return html + `<div class="empty-hint">暂无文档链接。</div>`;
+  html += `<div class="pf"><div class="pf-body" style="padding-top:6px;">
+  <table>
+    <thead><tr><th style="width:56px;">#</th><th style="width:34%;">文档名称</th><th>链接</th></tr></thead>
+    <tbody>${docs.map((d,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td><b>${d.name}</b></td>
+        <td><a href="${d.url}" target="_blank" rel="noopener" class="doclink">🔗 打开</a><span class="note-inline" style="margin-left:10px;">${d.url}</span></td>
+      </tr>`).join("")}
+    </tbody>
+  </table></div></div>`;
+  return html;
 }
 
 function toggleBody(pi){
