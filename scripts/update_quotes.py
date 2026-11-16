@@ -73,7 +73,7 @@ def fetch_quotes(syms):
 
 
 def fetch_kline(sym):
-    """拉取前复权日K，返回收盘价列表"""
+    """拉取前复权日K，返回 (行列表[日期,收盘], )"""
     txt = http_get("https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=%s,day,,,40,qfq" % sym)
     if not txt:
         return []
@@ -81,12 +81,19 @@ def fetch_kline(sym):
         js = json.loads(txt)
         node = js.get("data", {}).get(sym, {})
         rows = node.get("qfqday") or node.get("day") or []
-        return [float(r[2]) for r in rows if len(r) > 2]
+        return [(r[0], float(r[2])) for r in rows if len(r) > 2]
     except Exception:
         return []
 
 
+TARGET_DATE = None  # --date YYYY-MM-DD：锚定目标交易日（周末/盘中更新时必传）
+
+
 def main():
+    global TARGET_DATE
+    args = sys.argv[1:]
+    if "--date" in args:
+        TARGET_DATE = args[args.index("--date") + 1]
     codes, names = load_codes()
     print("共 %d 只标的待更新" % len(codes))
     syms = [mkt(c) + c for c in codes]
@@ -94,12 +101,17 @@ def main():
     stocks, last_date = {}, None
 
     for idx, (code, sym) in enumerate(zip(codes, syms), 1):
-        price = quotes.get(code, {}).get("price")
-        closes = fetch_kline(sym)
+        rows = fetch_kline(sym)
+        if TARGET_DATE:
+            rows = [r for r in rows if r[0] <= TARGET_DATE]  # 锚定目标交易日，丢弃盘中行
+        closes = [c for _, c in rows]
+        price = closes[-1] if closes else quotes.get(code, {}).get("price")
+        kdate = rows[-1][0] if rows else None
+        if kdate and (last_date is None or kdate > last_date):
+            last_date = kdate
         ma5 = ma10 = None
         if closes:
-            px = price if price is not None else closes[-1]
-            series = closes + ([px] if len(closes) >= 1 and price is not None else [])
+            series = closes  # 已锚定目标日，直接用收盘序列算均线
             # 用最近10个值（含当日）计算均线
             ma5 = round(sum(series[-5:]) / 5, 4) if len(series) >= 5 else None
             ma10 = round(sum(series[-10:]) / 10, 4) if len(series) >= 10 else None
@@ -119,8 +131,8 @@ def main():
               (idx, len(codes), code, stocks[code]["name"], price, ma5, ma10))
 
     now = datetime.now(CST)
-    date_str = now.strftime("%Y-%m-%d")
-    time_str = now.strftime("%H:%M")
+    date_str = last_date or now.strftime("%Y-%m-%d")  # 优先用K线锚定交易日
+    time_str = "15:30" if (last_date and last_date != now.strftime("%Y-%m-%d")) else now.strftime("%H:%M")
     payload = {"date": date_str, "time": time_str, "stocks": stocks}
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("window.TDX_QUOTES=" + json.dumps(payload, ensure_ascii=False) + ";\n")
