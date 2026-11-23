@@ -73,17 +73,34 @@ def fetch_quotes(syms):
 
 
 def fetch_kline(sym):
-    """拉取前复权日K，返回 (行列表[日期,收盘], )"""
+    """拉取日K，返回 [(日期, 收盘), ...]。腾讯前复权优先，失败回退新浪（不被 WAF 封）。"""
     txt = http_get("https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=%s,day,,,40,qfq" % sym)
-    if not txt:
-        return []
-    try:
-        js = json.loads(txt)
-        node = js.get("data", {}).get(sym, {})
-        rows = node.get("qfqday") or node.get("day") or []
-        return [(r[0], float(r[2])) for r in rows if len(r) > 2]
-    except Exception:
-        return []
+    if txt:
+        try:
+            js = json.loads(txt)
+            node = js.get("data", {}).get(sym, {})
+            rows = node.get("qfqday") or node.get("day") or []
+            out = [(r[0], float(r[2])) for r in rows if len(r) > 2]
+            if out:
+                return out
+        except Exception:
+            pass
+    # 新浪日K回退
+    url = ("https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData"
+           "?symbol=%s&scale=240&ma=no&datalen=40" % sym)
+    req_headers = dict(UA)
+    req_headers["Referer"] = "https://finance.sina.com.cn"
+    for i in range(3):
+        try:
+            req = urllib.request.Request(url, headers=req_headers)
+            with urllib.request.urlopen(req, timeout=20) as r:
+                data = json.loads(r.read().decode("utf-8", "ignore"))
+            out = [(x["day"], float(x["close"])) for x in data]
+            if out:
+                return out
+        except Exception:
+            time.sleep(1 + i)
+    return []
 
 
 TARGET_DATE = None  # --date YYYY-MM-DD：锚定目标交易日（周末/盘中更新时必传）
