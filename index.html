@@ -248,6 +248,15 @@ if(state.picks && DEFAULT_DATA.picks && DEFAULT_DATA.picks.length > state.picks.
   DEFAULT_DATA.picks.forEach(p=>{ if(!have.has(pk(p))){ state.picks.push(JSON.parse(JSON.stringify(p))); nAdd++; } });
   if(nAdd) save();
 }
+/* 2026-11-27 荐股宝典强制校准：以 DEFAULT_DATA 为准，保留用户改过的状态（防止旧缓存缺条） */
+if(state.picks && state._picksVer!=="2026-11-27"){
+  const pk2 = p => (p.d||"")+"|"+(p.who||"")+"|"+(p.name||"");
+  const oldSt = {};
+  state.picks.forEach(p=>{ const k=pk2(p); if(k && p.st) oldSt[k]=p.st; });
+  state.picks = JSON.parse(JSON.stringify(DEFAULT_DATA.picks||[]));
+  state.picks.forEach(p=>{ const s=oldSt[pk2(p)]; if(s) p.st=s; });
+  state._picksVer = "2026-11-27"; save();
+}
 /* 老本地数据补全：选股宝组合持仓（老缓存为空仓时自动补，2026-11-16 截图补录） */
 if(state.portfolios && DEFAULT_DATA.portfolios){
   let nFill = 0;
@@ -584,7 +593,7 @@ function renderPicks(){
   const nStop = picks.filter(p=>p.st==="stop").length;
   const nHold = picks.filter(p=>p.st==="hold"||!p.st).length;
   let html = `<div class="sechead"><h3>📖 荐股宝典 · 各位老师荐股</h3>
-    <span class="note-inline">共 ${picks.length} 条推荐，按推荐周分组；状态下拉框可直接修改并自动保存到本机</span>
+    <span class="note-inline">共 ${picks.length} 条推荐，按推荐周分组；状态下拉框可直接修改并自动保存到本机 ｜ 数据版本 ${state._picksVer||"—"}</span>
     <span class="badge b-ok">已获利了结 ${nWin}</span>
     <span class="badge b-ma">已获利卖出 ${nSold}</span>
     <span class="badge b-stop">已止损 ${nStop}</span>
